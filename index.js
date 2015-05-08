@@ -17,6 +17,7 @@ if (process.argv[2]) {
 var enemyBases = [];
 var myTanks = [];
 var allBases = [];
+var myBase = {};
 socket.on("init", function(initD) {
 	if (connected) {
 		return false;
@@ -31,6 +32,11 @@ socket.on("init", function(initD) {
 	enemyBases = initData.players.filter(function(p) {
 		return selectedPlayer.playerColor !== p.playerColor;
 	});
+
+	myBase = initData.players.filter(function(p) {
+		return selectedPlayer.playerColor == p.playerColor;
+	})[0].base;
+
 	allBases = initData.players;
 	var serverTanks = initData.tanks.filter(function(t) {
 		return selectedPlayer.playerColor === t.color;
@@ -86,7 +92,7 @@ socket.on("refresh", function(gameState) {
 	var myTanksNewPosition = gameState.tanks.filter(function(t) {
 		return selectedPlayer.playerColor === t.color;
 	});
-
+		// console.log(gameState)
 	updateMyTanks(myTanksNewPosition);
 	calculateGoal();
 	// if (gameState.boundaries.length > 0) {
@@ -101,6 +107,7 @@ function updateMyTanks (myTanksNewPosition) {
 			if (myTanks[i].tankNumber === myTanksNewPosition[j].tankNumber) {
 				myTanks[i].position = myTanksNewPosition[j].position;
 				myTanks[i].angle = myTanksNewPosition[j].angle;
+				myTanks[i].hasFlag = myTanksNewPosition[j].hasFlag;
 			}
 		}
 	}
@@ -206,11 +213,24 @@ Tank.prototype = {
 		var randomNumber = Math.floor(Math.random() * 10 % allBases.length); //random num between 0 and enemyBases.length
 		this.target = allBases[randomNumber].base.position;
 
+		if(this.hasFlag){
+			this.returnHome();
+		}else {
+			this.wander();
+		}
+
 		this.hasATarget = true;
 		return this.target;
 	},
 	missionAccomplished: function() {
 		this.hasATarget = false;
+	},
+	returnHome: function() {
+		this.target = myBase.position;
+	},
+	wander: function () {
+		var randomNumber = Math.floor(Math.random()*10 % allBases.length);
+		this.target = allBases[randomNumber].base.position;
 	}
 };
 
